@@ -1,0 +1,25 @@
+spring:
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    timeout: 1000
+    jedis:
+      pool:
+        max-active: 10
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+feign:
+  sentinel:
+    enabled: true
+  okhttp:
+    enabled: true
+  httpclient:
+    enabled: false
+  client:
+    config:
+      default:
+        connectTimeout: 10000
+        readTimeout: 10000
+        requestInterceptors: com.witos.common.security.feign.FeignRequestInterceptor

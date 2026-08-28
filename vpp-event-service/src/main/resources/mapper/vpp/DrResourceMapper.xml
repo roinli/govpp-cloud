@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.witos.vpp.event.mapper.DrResourceMapper">
+
+    <resultMap type="com.witos.vpp.event.domain.DrResource" id="DrResourceResult">
+        <id     property="resourceId"        column="resource_id"        />
+        <result property="resourceCode"      column="resource_code"      />
+        <result property="stationId"         column="station_id"         />
+        <result property="stationName"       column="station_name"       />
+        <result property="pileNo"            column="pile_no"            />
+        <result property="pileType"          column="pile_type"          />
+        <result property="resourceOwnerType" column="resource_owner_type" />
+        <result property="ratedPower"        column="rated_power"        />
+        <result property="adjustableRate"    column="adjustable_rate"    />
+        <result property="adjustablePower"   column="adjustable_power"   />
+        <result property="avg7dPower"        column="avg7d_power"        />
+        <result property="valleyRate"        column="valley_rate"        />
+        <result property="valleyPower"       column="valley_power"       />
+        <result property="tenantName"        column="tenant_name"        />
+        <result property="participateFlag"   column="participate_flag"   />
+        <result property="participateStatus" column="participate_status" />
+        <result property="deviceStatus"    column="device_status"      />
+        <result property="eventCount"         column="event_count"          />
+        <result property="createBy"          column="create_by"          />
+        <result property="createTime"        column="create_time"        />
+        <result property="updateBy"          column="update_by"          />
+        <result property="updateTime"        column="update_time"        />
+        <result property="tenantId"          column="tenant_id"          />
+    </resultMap>
+
+    <sql id="selectDrResourceVo">
+        select r.resource_id, r.resource_code, r.station_id, r.station_name, r.pile_no, r.pile_type, r.resource_owner_type,
+               r.rated_power, r.adjustable_rate, r.adjustable_power, r.avg7d_power, r.valley_rate, r.valley_power,
+               (select count(distinct d.event_id) from dr_dispatch d where d.pile_no = r.pile_no and d.tenant_id = r.tenant_id and d.del_flag = '0') as event_count,
+               t.tenant_name,
+               r.participate_flag, r.participate_status, r.device_status, r.create_by, r.create_time, r.update_by, r.update_time, r.tenant_id
+        from dr_resource r
+        left join sys_tenant t on t.id = r.tenant_id
+    </sql>
+
+    <select id="selectDrResourcePage" resultMap="DrResourceResult">
+        <include refid="selectDrResourceVo"/>
+        where r.del_flag = '0'
+        <if test="query.resourceCode != null and query.resourceCode != ''"> and r.resource_code like concat('%', #{query.resourceCode}, '%')</if>
+        <if test="query.stationName != null and query.stationName != ''"> and r.station_name like concat('%', #{query.stationName}, '%')</if>
+        <if test="query.pileNo != null and query.pileNo != ''"> and r.pile_no like concat('%', #{query.pileNo}, '%')</if>
+        <if test="query.pileType != null and query.pileType != ''"> and r.pile_type = #{query.pileType}</if>
+        <if test="query.participateStatus != null and query.participateStatus != ''"> and r.participate_status = #{query.participateStatus}</if>
+        <if test="query.deviceStatus != null and query.deviceStatus != ''"> and r.device_status = #{query.deviceStatus}</if>
+        <if test="query.stationIds != null and query.stationIds.size() > 0"> and r.station_id in
+            <foreach collection="query.stationIds" item="stationId" open="(" separator="," close=")">#{stationId}</foreach>
+        </if>
+        <if test="(query.stationIds == null or query.stationIds.size() == 0) and query.stationId != null and query.stationId != ''"> and r.station_id = #{query.stationId}</if>
+        <if test="query.keyword != null and query.keyword != ''"> and (r.pile_no like concat('%', #{query.keyword}, '%') or r.station_name like concat('%', #{query.keyword}, '%') or t.tenant_name like concat('%', #{query.keyword}, '%'))</if>
+        order by r.resource_id
+    </select>
+    <select id="selectDrResourceList" resultMap="DrResourceResult">
+        <include refid="selectDrResourceVo"/>
+        where r.del_flag = '0'
+        <if test="query.resourceCode != null and query.resourceCode != ''"> and r.resource_code like concat('%', #{query.resourceCode}, '%')</if>
+        <if test="query.stationName != null and query.stationName != ''"> and r.station_name like concat('%', #{query.stationName}, '%')</if>
+        <if test="query.pileNo != null and query.pileNo != ''"> and r.pile_no like concat('%', #{query.pileNo}, '%')</if>
+        <if test="query.pileType != null and query.pileType != ''"> and r.pile_type = #{query.pileType}</if>
+        <if test="query.participateStatus != null and query.participateStatus != ''"> and r.participate_status = #{query.participateStatus}</if>
+        <if test="query.deviceStatus != null and query.deviceStatus != ''"> and r.device_status = #{query.deviceStatus}</if>
+        <if test="query.stationIds != null and query.stationIds.size() > 0"> and r.station_id in
+            <foreach collection="query.stationIds" item="stationId" open="(" separator="," close=")">#{stationId}</foreach>
+        </if>
+        <if test="(query.stationIds == null or query.stationIds.size() == 0) and query.stationId != null and query.stationId != ''"> and r.station_id = #{query.stationId}</if>
+        <if test="query.keyword != null and query.keyword != ''"> and (r.pile_no like concat('%', #{query.keyword}, '%') or r.station_name like concat('%', #{query.keyword}, '%') or t.tenant_name like concat('%', #{query.keyword}, '%'))</if>
+        order by r.resource_id
+    </select>
+
+    <delete id="deleteDrResourceByIds" parameterType="Long">
+        delete from dr_resource where resource_id in
+        <foreach item="resourceId" collection="array" open="(" separator="," close=")">
+            #{resourceId}
+        </foreach>
+    </delete>
+
+    <select id="selectResourceStats" resultType="java.util.HashMap">
+        select
+            count(distinct station_name) as stationCount,
+            count(*) as pileCount,
+            sum(rated_power) as ratedPower,
+            sum(adjustable_power) as adjustablePower,
+            sum(valley_power) as valleyPower,
+            sum(avg7d_power) as avg7dPower,
+            sum(case when pile_type = 'DC' then 1 else 0 end) as dcCount,
+            sum(case when pile_type = 'AC' then 1 else 0 end) as acCount,
+            sum(case when device_status = '1' then 1 else 0 end) as onlineCount,
+            sum(case when device_status = '2' then 1 else 0 end) as offlineCount,
+            sum(case when device_status = '3' then 1 else 0 end) as faultCount
+        from dr_resource
+        where del_flag = '0' and participate_flag = '1' and participate_status = '1'
+        <if test="stationIds != null and stationIds.size() > 0">
+            and station_id in
+            <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+    </select>
+
+    <select id="selectResourceStatsGroupByStation" resultType="java.util.HashMap">
+        select
+            coalesce(tenant_id, 9999) as tenantId,
+            station_id as stationId,
+            count(*) as pileCount,
+            sum(rated_power) as ratedPower,
+            sum(adjustable_power) as adjustablePower,
+            sum(valley_power) as valleyPower,
+            sum(case when device_status = '1' then 1 else 0 end) as onlineCount,
+            sum(case when device_status = '2' then 1 else 0 end) as offlineCount,
+            sum(case when device_status = '3' then 1 else 0 end) as faultCount
+        from dr_resource
+        where del_flag = '0' and participate_flag = '1' and participate_status = '1'
+        group by coalesce(tenant_id, 9999), station_id
+    </select>
+
+    <select id="selectTenantNameById" resultType="java.lang.String">
+        select tenant_name from sys_tenant where id = #{tenantId}
+    </select>
+
+    <select id="selectStationCapacityList" resultType="java.util.HashMap">
+        select
+            s.station_id as stationId,
+            s.station_name as stationName,
+            coalesce(sum(case when r.participate_status = '1' then r.adjustable_power else 0 end), 0) as adjustablePower,
+            coalesce(sum(case when r.participate_status = '1' then r.valley_power else 0 end), 0) as fillValleyPower,
+            count(r.resource_id) as pileCount
+        from dr_station s
+        left join dr_resource r on r.station_id = s.station_id and r.del_flag = '0'
+        where s.del_flag = '0' and s.status = '1'
+        group by s.station_id, s.station_name
+        order by s.station_id
+    </select>
+
+    <select id="selectStationRank" resultType="java.util.HashMap">
+        select
+            station_id as stationId,
+            station_name as stationName,
+            sum(adjustable_power) as adjustablePower,
+            sum(valley_power) as valleyPower
+        from dr_resource
+        where del_flag = '0' and participate_flag = '1'
+        <if test="stationIds != null and stationIds.size() > 0">
+            and station_id in
+            <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        group by station_id, station_name
+        order by
+            <choose>
+                <when test="type == 'valley'">sum(valley_power) desc</when>
+                <otherwise>sum(adjustable_power) desc</otherwise>
+            </choose>
+        limit #{limit}
+    </select>
+
+    <select id="selectOperatorEventPie" resultType="java.util.HashMap">
+        select
+            coalesce(t.tenant_name, '其他') as tenantName,
+            coalesce(sub.event_count, 0) as eventCount
+        from (
+            select
+                r.tenant_id,
+                count(distinct dd.event_id) as event_count
+            from dr_resource r
+            left join dr_dispatch dd
+                on dd.pile_no = r.pile_no
+                and dd.tenant_id = r.tenant_id
+                and dd.del_flag = '0'
+            where r.del_flag = '0' and r.participate_flag = '1'
+            <if test="stationIds != null and stationIds.size() > 0">
+                and r.station_id in
+                <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            group by r.tenant_id
+        ) sub
+        left join sys_tenant t on t.id = sub.tenant_id
+        order by sub.event_count desc
+    </select>
+
+    <select id="selectStationEventPie" resultType="java.util.HashMap">
+        select
+            sub.station_name as stationName,
+            coalesce(sub.event_count, 0) as eventCount
+        from (
+            select
+                r.station_id,
+                r.station_name,
+                count(distinct dd.event_id) as event_count
+            from dr_resource r
+            left join dr_dispatch dd
+                on dd.pile_no = r.pile_no
+                and dd.tenant_id = r.tenant_id
+                and dd.del_flag = '0'
+            where r.del_flag = '0' and r.participate_flag = '1'
+            <if test="tenantId != null">
+                and r.tenant_id = #{tenantId}
+            </if>
+            <if test="stationIds != null and stationIds.size() > 0">
+                and r.station_id in
+                <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            group by r.station_id, r.station_name
+        ) sub
+        order by sub.event_count desc
+    </select>
+
+</mapper>

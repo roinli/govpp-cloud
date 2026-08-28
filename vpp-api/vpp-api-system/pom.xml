@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.witos</groupId>
+        <artifactId>vpp-api</artifactId>
+        <version>1.2.2</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>vpp-api-system</artifactId>
+
+    <description>
+        vpp-api-system系统接口模块
+    </description>
+
+    <dependencies>
+
+        <!-- witos Common Core-->
+        <dependency>
+            <groupId>com.witos</groupId>
+            <artifactId>vpp-common-core</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>

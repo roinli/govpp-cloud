@@ -1,0 +1,3 @@
+com.witos.system.api.factory.RemoteUserFallbackFactory
+com.witos.system.api.factory.RemoteLogFallbackFactory
+com.witos.system.api.factory.RemoteFileFallbackFactory

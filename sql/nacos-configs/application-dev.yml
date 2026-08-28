@@ -1,0 +1,124 @@
+spring:
+  jackson:
+    time-zone: GMT+8
+  autoconfigure:
+    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  mail:
+    host: smtpdm.aliyun.com
+    username: dev@huizhi.local
+    password: devpass
+    port: 465
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+          socketFactoryClass: javax.net.ssl.SSLSocketFactory
+        debug: false
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    timeout: 1000
+    jedis:
+      pool:
+        max-active: 10
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+  datasource:
+    dynamic:
+      primary: master
+      strict: false
+      datasource:
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://127.0.0.1:3306/vpp_platform?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
+          username: root
+          password: root
+feign:
+  sentinel:
+    enabled: true
+  okhttp:
+    enabled: true
+  httpclient:
+    enabled: false
+  client:
+    config:
+      default:
+        connectTimeout: 10000
+        readTimeout: 10000
+      vpp-job:
+        connectTimeout: 100000
+        readTimeout: 100000
+  compression:
+    request:
+      enabled: true
+    response:
+      enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+logging:
+  level:
+    org.springframework: info
+    com.witos: debug
+  file_basePath: ./logs
+  file_prefix: ${spring.application.name}
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  global-config:
+    banner: false
+    refresh-mapper: true
+    db-config:
+      id-type: auto
+      table-underline: true
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+  type-handlers-package: com.witos.common.mybatisplus
+witos:
+  tenant:
+    ignore-tables:
+      - dr_event
+      - dr_settlement
+      - dr_operator_dispatch
+      - sys_config
+      - gen_table
+      - gen_table_column
+      - sys_dict_data
+      - sys_dict_type
+      - sys_menu
+      - sys_tenant
+      - sys_tenant_package
+      - sys_oper_log
+      - sys_logininfor
+      - branch_table
+      - global_table
+      - lock_table
+      - undo_log
+      - xxl_job_group
+      - xxl_job_info
+      - xxl_job_lock
+      - xxl_job_log
+      - xxl_job_log_report
+      - xxl_job_logglue
+      - xxl_job_registry
+      - xxl_job_user
+aliyun:
+  endpoint: cn-shanghai
+  accessKeyId: dummy
+  accessKeySecret: dummy
+  signName: dummy
+  templateCode: dummy
+file:
+  domain: http://127.0.0.1:39300
+  path: /home/upload
+  prefix: /documents

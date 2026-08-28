@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.witos.vpp.event.mapper.DrStationMapper">
+
+    <resultMap type="com.witos.vpp.event.domain.DrStation" id="DrStationResult">
+        <id     property="stationId"    column="station_id"    />
+        <result property="stationName"  column="station_name"  />
+        <result property="address"      column="address"       />
+        <result property="province"    column="province"      />
+        <result property="city"        column="city"          />
+        <result property="longitude"   column="longitude"     />
+        <result property="latitude"    column="latitude"      />
+        <result property="capacity"     column="capacity"      />
+        <result property="userId"       column="user_id"       />
+        <result property="contact"      column="contact"       />
+        <result property="phone"        column="phone"         />
+        <result property="imageUrl"     column="image_url"     />
+        <result property="status"       column="status"        />
+        <result property="operatorRate" column="operator_rate" />
+        <result property="totalIncome"  column="total_income"  />
+        <result property="onlineCount"  column="online_count"  />
+        <result property="offlineCount" column="offline_count" />
+        <result property="faultCount"   column="fault_count"   />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="tenantId"     column="tenant_id"     />
+    </resultMap>
+
+    <sql id="selectDrStationVo">
+        select s.station_id, s.station_name, s.address, s.province, s.city, s.longitude, s.latitude, s.capacity, s.user_id, s.contact, s.phone, s.image_url, s.status, s.operator_rate,
+               s.create_by, s.create_time, s.update_by, s.update_time, s.tenant_id,
+               coalesce(settle.total_income, 0) as total_income,
+               coalesce(dev.online_count, 0) as online_count,
+               coalesce(dev.offline_count, 0) as offline_count,
+               coalesce(dev.fault_count, 0) as fault_count
+        from dr_station s
+        left join (select station_id, sum(station_amount) as total_income
+                   from dr_settlement where del_flag = '0' group by station_id) settle
+               on settle.station_id = s.station_id
+        left join (select station_id,
+                          sum(case when device_status = '1' then 1 else 0 end) as online_count,
+                          sum(case when device_status = '2' then 1 else 0 end) as offline_count,
+                          sum(case when device_status = '3' then 1 else 0 end) as fault_count
+                   from dr_resource where del_flag = '0' group by station_id) dev
+               on dev.station_id = s.station_id
+    </sql>
+
+    <select id="selectDrStationPage" resultMap="DrStationResult">
+        <include refid="selectDrStationVo"/>
+        where s.del_flag = '0'
+        <if test="query.stationName != null and query.stationName != ''"> and s.station_name like concat('%', #{query.stationName}, '%')</if>
+        <if test="query.status != null and query.status != ''"> and s.status = #{query.status}</if>
+        <if test="query.contact != null and query.contact != ''"> and s.contact like concat('%', #{query.contact}, '%')</if>
+        <if test="query.userId != null"> and s.user_id = #{query.userId}</if>
+        order by s.station_id
+    </select>
+    <select id="selectDrStationList" resultMap="DrStationResult">
+        <include refid="selectDrStationVo"/>
+        where s.del_flag = '0'
+        <if test="query.stationName != null and query.stationName != ''"> and s.station_name like concat('%', #{query.stationName}, '%')</if>
+        <if test="query.status != null and query.status != ''"> and s.status = #{query.status}</if>
+        <if test="query.contact != null and query.contact != ''"> and s.contact like concat('%', #{query.contact}, '%')</if>
+        <if test="query.userId != null"> and s.user_id = #{query.userId}</if>
+        order by s.station_id
+    </select>
+
+    <select id="selectStationStats" resultType="java.util.HashMap">
+        select
+            s.stationCount,
+            s.enabledCount,
+            s.disabledCount,
+            s.totalCapacity,
+            s.avgCapacity,
+            coalesce(r.adjustablePower, 0) as adjustablePower,
+            coalesce(r.valleyPower, 0) as valleyPower,
+            coalesce(r.ratedPower, 0) as ratedPower,
+            coalesce(r.baselinePower, 0) as baselinePower,
+            coalesce(r.pileCount, 0) as pileCount,
+            coalesce(r.dcPileCount, 0) as dcPileCount,
+            coalesce(r.acPileCount, 0) as acPileCount
+        from
+            (select
+                count(*) as stationCount,
+                sum(case when status = '1' then 1 else 0 end) as enabledCount,
+                sum(case when status = '0' then 1 else 0 end) as disabledCount,
+                coalesce(sum(capacity), 0) as totalCapacity,
+                coalesce(round(avg(capacity), 2), 0) as avgCapacity
+             from dr_station
+             where del_flag = '0'
+             <if test="stationIds != null and stationIds.size() > 0">
+                and station_id in <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+             </if>
+            ) s
+        cross join
+            (select
+                coalesce(sum(adjustable_power), 0) as adjustablePower,
+                coalesce(sum(valley_power), 0) as valleyPower,
+                coalesce(sum(rated_power), 0) as ratedPower,
+                coalesce(sum(avg7d_power), 0) as baselinePower,
+                count(resource_id) as pileCount,
+                sum(case when pile_type = 'DC' then 1 else 0 end) as dcPileCount,
+                sum(case when pile_type = 'AC' then 1 else 0 end) as acPileCount
+             from dr_resource
+             where del_flag = '0' and participate_flag = '1'
+             <if test="stationIds != null and stationIds.size() > 0">
+                and station_id in <foreach collection="stationIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+             </if>
+            ) r
+    </select>
+
+</mapper>
